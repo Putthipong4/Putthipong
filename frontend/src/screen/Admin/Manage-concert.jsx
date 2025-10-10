@@ -177,7 +177,7 @@ const closeConcert = async (Concert_id) => {
   className="btn btn-error btn-sm"
   onClick={() => closeConcert(concert.Concert_id)}
 >
-  ปิดคอนเสิร์ต
+  ปิดการขาย
 </button>
                     </div>
                   </td>

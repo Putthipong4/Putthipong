@@ -84,7 +84,7 @@ function QrCode() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <span className="badge badge-warning text-white px-3 py-1">
+                                            <span className="badge badge-info text-white px-3 py-1">
                                                 {order.Status_Name}
                                             </span>
                                         )}
