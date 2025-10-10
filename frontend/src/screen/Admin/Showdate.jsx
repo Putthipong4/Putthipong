@@ -21,11 +21,7 @@ function Showdate() {
     });
   }, []);
 
-  // สร้าง object เก็บจำนวนรอบต่อคอนเสิร์ต
-  const concertRounds = showdate.reduce((acc, cur) => {
-    acc[cur.Concert_id] = (acc[cur.Concert_id] || 0) + 1;
-    return acc;
-  }, {});
+  
 
 
   return (
@@ -94,15 +90,13 @@ function Showdate() {
                       <div className="flex justify-center gap-4">
                         
                        
-                        {concertRounds[show.Concert_id] < 2 && (
                           <Plus
                             size={30}
                             color="SpringGreen"
                             className="cursor-pointer"
                             onClick={() => navigate(`/admin/AddShowDate/${show.ShowDate_id}`)}
                           />
-                        )}
-
+              
                       </div>
                     </td>
                   </tr>
