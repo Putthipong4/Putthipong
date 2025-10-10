@@ -101,9 +101,12 @@ router.get("/MyTicket/:memberId", authenticateToken, async (req, res) => {
         sd.ShowDate,
         sd.ShowStart,
         c.ConcertName,
+        c.Concert_id, 
         o.ShowDate_id,
+        o.Rating, 
         sd.ShowStart,
         s.Status_id,
+        sd.ShowTime,
         CONCAT(o.Order_date, ' ', o.Order_time) AS order_datetime,
         GROUP_CONCAT(o.Seat_Number ORDER BY o.Seat_Number SEPARATOR ', ') AS Seat_Number,
         CONCAT(sd.ShowDate, ' ',sd.ShowStart) as ShowDateTime
@@ -385,6 +388,40 @@ router.get("/OrderQrcode/:id", authenticateToken,  async (req, res) => {
   }
 });
 
+router.put("/AddRating", async (req, res) => {
+  try {
+    const { Member_id, Concert_id, Rating } = req.body;
+
+    if (!Member_id || !Concert_id || !Rating) {
+      return res.status(400).json({ success: false, message: "กรุณาส่งข้อมูลให้ครบ" });
+    }
+
+    // ตรวจสอบว่าผู้ใช้มีออร์เดอร์สำหรับคอนเสิร์ตนี้หรือไม่
+    const [orders] = await db
+      .promise()
+      .query(
+        "SELECT * FROM `order` WHERE Member_id = ? AND Concert_id = ? AND Price IS NOT NULL",
+        [Member_id, Concert_id]
+      );
+
+    if (orders.length === 0) {
+      return res.status(404).json({ success: false, message: "ไม่พบคำสั่งซื้อนี้" });
+    }
+
+    // อัปเดตค่า Rating ในตาราง order
+    await db
+      .promise()
+      .query(
+        "UPDATE `order` SET Rating = ? WHERE Member_id = ? AND Concert_id = ? AND Price IS NOT NULL",
+        [Rating, Member_id, Concert_id]
+      );
+
+    return res.json({ success: true, message: "บันทึกคะแนนสำเร็จ" });
+  } catch (error) {
+    console.error("Error saving rating:", error);
+    return res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดภายในระบบ" });
+  }
+});
 
 
 module.exports = router;

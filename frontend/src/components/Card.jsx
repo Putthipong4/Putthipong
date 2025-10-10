@@ -25,15 +25,15 @@ function Card() {
     return acc;
   }, []);
 
-  // ✅ ตัวกรอง: ไม่แสดงคอนเสิร์ตที่แสดงไปแล้วเกิน 1 วัน
-  const now = dayjs();
-  const filteredConcerts = uniqueConcerts.filter((concert) => {
-    const showDateTime = dayjs(concert.ShowDateTime);
-    const oneDayAfterShow = showDateTime.add(1, "day");
+ 
+  // ✅ ตัวกรอง: แสดงเฉพาะคอนเสิร์ตที่ยังไม่เกิน 1 วันหลังรอบสุดท้าย
+const now = dayjs();
+const filteredConcerts = uniqueConcerts.filter((concert) => {
+  const showDateTime = dayjs(`${concert.ShowDateTime}`);
+  const oneDayAfterShow = showDateTime.add(1, "day");
+  return now.isBefore(oneDayAfterShow);
+});
 
-    // แสดงเฉพาะคอนเสิร์ตที่ยังไม่เกิน 1 วันหลังจากวันแสดง
-    return now.isBefore(oneDayAfterShow);
-  });
 
   // ✅ แยกเป็น 2 กลุ่ม
   const availableConcerts = filteredConcerts.filter((c) =>

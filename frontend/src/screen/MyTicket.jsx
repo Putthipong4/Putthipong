@@ -6,6 +6,7 @@ import Navbar from "../components/Navbar";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import Breadcrumbs from "../components/Admin/Breadcrumbs";
+import { Star } from "lucide-react";
 
 
 function MyTicket() {
@@ -164,9 +165,9 @@ function MyTicket() {
         <h1 className="text-4xl font-extrabold text-center text-green-600 mb-10 drop-shadow kanit-medium">
           บัตรของฉัน
         </h1>
-          <p className="text-xl font-extrabold text-green-700 kanit-medium m-4">
-            ยอดรวมทั้งหมด: {totalAll.toLocaleString()} บาท
-          </p>
+        <p className="text-xl font-extrabold text-green-700 kanit-medium m-4">
+          ยอดรวมทั้งหมด: {totalAll.toLocaleString()} บาท
+        </p>
         {/* 🎟 ตั๋วที่รอการชำระ */}
         <section className="mb-12 kanit-medium">
           <h2 className="text-2xl font-bold text-yellow-600 mb-6 flex items-center gap-2">
@@ -209,7 +210,7 @@ function MyTicket() {
           )}
         </section>
 
-        {/* ✅ ตั๋วที่ชำระแล้ว */}
+        {/*  ตั๋วที่ชำระแล้ว */}
         <section className="kanit-medium">
           <h2 className="text-2xl font-bold text-green-600 mb-6 flex items-center gap-2">
             <span className="text-3xl"></span> ตั๋วที่ชำระเงินแล้ว
@@ -220,13 +221,14 @@ function MyTicket() {
             <div className="grid gap-5">
               {paidTickets.map((ticket) => {
                 const showDateTime = dayjs(`${ticket.ShowDateTime}`);
-                const now = dayjs();
-                const isShowPassed = now.isAfter(showDateTime);
+                const durationHours = Number(ticket.ShowTime) || 0;
+                const endShowTime = showDateTime.add(durationHours, "hour");
+                const canRate = dayjs().isAfter(endShowTime); 
 
                 const handleRating = async () => {
-  const { value: rating } = await Swal.fire({
-    title: `ให้คะแนนคอนเสิร์ต "${ticket.ConcertName}"`,
-    html: `
+                  const { value: rating } = await Swal.fire({
+                    title: `ให้คะแนนคอนเสิร์ต "${ticket.ConcertName}"`,
+                    html: `
       <div id="star-container" style="font-size: 2rem; color: #ccc; cursor: pointer;">
         <span class="star" data-value="1">★</span>
         <span class="star" data-value="2">★</span>
@@ -236,61 +238,67 @@ function MyTicket() {
       </div>
       <p id="rating-text" style="margin-top:10px; font-size:1.2rem; color:#555;">เลือกคะแนนของคุณ</p>
     `,
-    showCancelButton: true,
-    confirmButtonText: "บันทึก",
-    cancelButtonText: "ยกเลิก",
-    preConfirm: () => {
-      const selected = document.querySelector(".star.selected");
-      if (!selected) {
-        Swal.showValidationMessage("กรุณาเลือกคะแนนก่อนบันทึก");
-        return false;
-      }
-      return selected.dataset.value;
-    },
-    didOpen: () => {
-      const stars = Swal.getPopup().querySelectorAll(".star");
-      const ratingText = Swal.getPopup().querySelector("#rating-text");
+                    showCancelButton: true,
+                    confirmButtonText: "บันทึก",
+                    cancelButtonText: "ยกเลิก",
+                    preConfirm: () => {
+                      const selected = document.querySelector(".star.selected");
+                      if (!selected) {
+                        Swal.showValidationMessage("กรุณาเลือกคะแนนก่อนบันทึก");
+                        return false;
+                      }
+                      return selected.dataset.value;
+                    },
+                    didOpen: () => {
+                      const stars = Swal.getPopup().querySelectorAll(".star");
+                      const ratingText = Swal.getPopup().querySelector("#rating-text");
 
-      stars.forEach((star) => {
-        star.addEventListener("click", () => {
-          stars.forEach((s) => (s.style.color = "#ccc"));
-          star.style.color = "#f59e0b"; // สีทอง
-          let value = star.dataset.value;
-          ratingText.textContent = `คุณให้คะแนน ${value} ดาว`;
-          stars.forEach((s, i) => {
-            if (i < value) s.style.color = "#f59e0b";
-            else s.style.color = "#ccc";
-          });
-          stars.forEach((s) => s.classList.remove("selected"));
-          star.classList.add("selected");
-        });
-      });
-    },
-  });
+                      stars.forEach((star) => {
+                        star.addEventListener("click", () => {
+                          stars.forEach((s) => (s.style.color = "#ccc"));
+                          star.style.color = "#f59e0b"; // สีทอง
+                          let value = star.dataset.value;
+                          ratingText.textContent = `คุณให้คะแนน ${value} ดาว`;
+                          stars.forEach((s, i) => {
+                            if (i < value) s.style.color = "#f59e0b";
+                            else s.style.color = "#ccc";
+                          });
+                          stars.forEach((s) => s.classList.remove("selected"));
+                          star.classList.add("selected");
+                        });
+                      });
+                    },
+                  });
 
-  if (rating) {
-    try {
-      await Axios.post("http://localhost:3001/api/Rating/AddRating", {
-        Member_id: memberId,
-        Concert_id: ticket.Concert_id,
-        Rating: rating,
-      });
+                  if (rating) {
+                    try {
+                      await Axios.put("http://localhost:3001/api/Order/AddRating", {
+                        Member_id: memberId,
+                        Concert_id: ticket.Concert_id,
+                        Rating: rating,
+                      });
 
-      Swal.fire({
-        title: "ขอบคุณสำหรับการให้คะแนน!",
-        text: `คุณให้ ${rating} ดาวแก่คอนเสิร์ต ${ticket.ConcertName}`,
-        icon: "success",
-      });
-    } catch (error) {
-      console.error("Error saving rating:", error);
-      Swal.fire({
-        title: "เกิดข้อผิดพลาด",
-        text: "ไม่สามารถบันทึกคะแนนได้",
-        icon: "error",
-      });
-    }
-  }
-};
+                      Swal.fire({
+                        title: "ขอบคุณสำหรับการให้คะแนน!",
+                        text: `คุณให้ ${rating} ดาวแก่คอนเสิร์ต ${ticket.ConcertName}`,
+                        icon: "success",
+                      });
+                      ticket.Rating = rating;
+                      setTickets((prev) =>
+                        prev.map((t) =>
+                          t.Order_id === ticket.Order_id ? { ...t, Rating: rating } : t
+                        )
+                      );
+                    } catch (error) {
+                      console.error("Error saving rating:", error);
+                      Swal.fire({
+                        title: "เกิดข้อผิดพลาด",
+                        text: "ไม่สามารถบันทึกคะแนนได้",
+                        icon: "error",
+                      });
+                    }
+                  }
+                };
 
                 return (
                   <div
@@ -328,7 +336,7 @@ function MyTicket() {
                     </p>
 
                     {/*  แสดงปุ่มให้คะแนนถ้าเลยเวลาแสดงแล้ว */}
-                    {isShowPassed && (
+                    {canRate && !ticket.Rating && (
                       <button
                         className="btn btn-outline btn-success mt-3"
                         onClick={(e) => {
@@ -338,6 +346,13 @@ function MyTicket() {
                       >
                         ให้คะแนนคอนเสิร์ต
                       </button>
+                    )}
+
+                    {/*  ถ้าเคยให้คะแนนแล้ว แสดงข้อความแทน */}
+                    {ticket.Rating && (
+                      <p className="text-green-600 font-semibold mt-3">
+                        คุณให้คะแนนแล้ว:   {ticket.Rating} ดาว
+                      </p>
                     )}
                   </div>
                 );

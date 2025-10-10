@@ -59,6 +59,8 @@ function Detail() {
   }, [id]);
 
 
+
+
   if (!concert) return <div>Loading...</div>;
 
   return (
@@ -141,7 +143,38 @@ function Detail() {
                 <Ticket size={50} />
                 <div className="flex flex-col p-4">
                   <p className="text-lg text-gray-500">สถานะของบัตร</p>
-                  <span>ว่าง</span>
+                  {/* คำนวณสถานะรวมของทุก ShowRound */}
+                  {concert.ShowRounds && (() => {
+                    const now = dayjs();
+
+                    const saleStart = dayjs(concert.SaleDateTime);
+                    const isComingSoon = now.isBefore(saleStart); // ยังไม่เปิดขาย
+
+                    const isAllSoldOut = concert.ShowRounds.every((r) => {
+                      const showDateTime = dayjs(r.ShowDateTime);
+                      const isShowPassed = now.isAfter(showDateTime);
+                      return r.AvailableSeats <= 0 || isShowPassed;
+                    });
+
+                    let statusText = "เปิดขาย";
+                    let statusColor = "badge badge-success";
+
+                    if (isComingSoon) {
+                      statusText = "เร็ว ๆ นี้";
+                      statusColor = "badge badge-warning"; 
+                    } else if (isAllSoldOut) {
+                      statusText = "Sold Out";
+                      statusColor = "badge badge-error"; 
+                    }
+
+                    return (
+                      <span className={`font-bold ${statusColor}`}>
+                        {statusText}
+                      </span>
+                    );
+                  })()}
+
+
                 </div>
               </div>
             </div>

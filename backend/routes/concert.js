@@ -381,13 +381,24 @@ router.get("/Showdateandseat", async (req, res) => {
 router.get("/ShowdateandConcert", async (req, res) => {
   try {
     const sql = `
-      SELECT sd.ShowDate_id, sd.ShowDate, sd.ShowStart, sd.TotalSeat, sd.ShowTime, sd.Concert_id,
-             c.ConcertName, c.Price, c.Details, c.Poster, c.OpenSaleDate, c.OpenSaleTimes, c.Admin_id,
-             COUNT(CASE WHEN s.Status = 'ว่าง' THEN 1 END) AS AvailableSeats,
-             CONCAT(sd.ShowDate, ' ', sd.ShowStart) AS ShowDateTime,
-             CONCAT(c.OpenSaleDate, ' ', c.OpenSaleTimes) AS SaleDateTime
-      FROM showdate sd
-      JOIN concert c ON sd.Concert_id = c.Concert_id
+      SELECT 
+        c.Concert_id,
+        c.ConcertName,
+        c.Price,
+        c.Details,
+        c.Poster,
+        c.OpenSaleDate,
+        c.OpenSaleTimes,
+        c.Admin_id,
+        sd.ShowDate,
+        sd.ShowStart,
+        MAX(sd.ShowDate) AS LastShowDate,
+        MAX(sd.ShowStart) AS LastShowStart,
+        COUNT(CASE WHEN s.Status = 'ว่าง' THEN 1 END) AS AvailableSeats,
+        CONCAT(MAX(sd.ShowDate), ' ', MAX(sd.ShowStart)) AS ShowDateTime,
+        CONCAT(c.OpenSaleDate, ' ', c.OpenSaleTimes) AS SaleDateTime
+      FROM concert c
+      JOIN showdate sd ON c.Concert_id = sd.Concert_id
       JOIN showdateandseat s ON sd.ShowDate_id = s.ShowDate_id
       GROUP BY c.Concert_id
       ORDER BY c.Concert_id;
@@ -396,13 +407,14 @@ router.get("/ShowdateandConcert", async (req, res) => {
     const [rows] = await db.promise().query(sql);
     res.json(rows);
   } catch (err) {
-    console.error(" Error fetching showdate:", err);
+    console.error("Error fetching showdate:", err);
     res.status(500).json({
       message: "Database error",
       error: err.message || err,
     });
   }
 });
+
 
 router.post("/AddShowdate", authenticateToken, async (req, res) => {
   try {
@@ -706,8 +718,6 @@ router.put("/UpdateShowDate", authenticateToken, async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal server error." });
   }
 });
-
-module.exports = router;
 
 
 module.exports = router;
