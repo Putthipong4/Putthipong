@@ -5,7 +5,6 @@ import Axios from "axios";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import { Edit2, Plus, Trash, Trash2 } from "lucide-react";
-// import { useNavigate } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 
 function Showdate() {
@@ -22,8 +21,6 @@ function Showdate() {
   }, []);
 
   
-
-
   return (
     <div className="drawer lg:drawer-open">
       {/* drawer toggle สำหรับ mobile */}
@@ -52,7 +49,7 @@ function Showdate() {
             <thead>
               <tr>
                 <th>
-                  <p className="text-center">รหัสรอบการแสดง</p>
+                  <p className="text-center">ชื่อคอนเสิร์ต</p>
                 </th>
                 <th>
                   <p className="text-center">รอบการแสดง</p>
@@ -66,9 +63,7 @@ function Showdate() {
                 <th>
                   <p className="text-center">จำนวนชั่วโมงในการแสดง</p>
                 </th>
-                <th>
-                  <p className="text-center">รหัสคอนเสิร์ต</p>
-                </th>
+                
                 <th>
                   <p className="text-center">จัดการ</p>
                 </th>
@@ -80,16 +75,15 @@ function Showdate() {
 
                 return (
                   <tr key={show.ShowDate_id}>
-                    <td className="text-center">{show.ShowDate_id}</td>
+                    <td className="text-center">{show.ConcertName}</td>
                     <td className="text-center">{dayjs(show.ShowDate).locale("th").format("D MMMM YYYY")}</td>
                     <td className="text-center">{show.ShowStart.slice(0, 5)}</td>
                     <td className="text-center">{show.TotalSeat}</td>
-                    <td className="text-center">{show.ShowTime}</td>
-                    <td className="text-center">{show.Concert_id}</td>
+                    <td className="text-center">{show.ShowTime}</td>     
                     <td>
                       <div className="flex justify-center gap-4">
                         
-                       
+                        <Edit2 className="cursor-pointer" color="#FFFF99" onClick={() => navigate(`/admin/EditShowDate/${show.ShowDate_id}`)}/>
                           <Plus
                             size={30}
                             color="SpringGreen"

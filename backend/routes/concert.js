@@ -346,7 +346,7 @@ router.put("/UpdateConcert",
 );
 
 router.get("/showdate", (req, res) => {
-  db.query("SELECT * FROM showdate ORDER BY Concert_id", (err, result) => {
+  db.query("SELECT sd.ShowDate_id, sd.ShowTime, sd.ShowStart, sd.ShowDate, sd.TotalSeat, sd.Concert_id, c.ConcertName FROM showdate sd JOIN concert c ON sd.Concert_id = c.Concert_id ORDER BY sd.Concert_id", (err, result) => {
     if (err) {
       console.log(err);
     } else {
@@ -586,138 +586,148 @@ router.put("/close/:Concert_id", async (req, res) => {
 });
 
 
-router.put("/UpdateShowDate", authenticateToken, async (req, res) => {
+router.put("/UpdateShowDate", async (req, res) => {
   try {
-    // ตรวจสิทธิ์
-    if (req.user.role !== "admin") {
-      return res.status(403).json({ success: false, message: "คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้" });
-    }
+    const { ShowDate_id, Concert_id, ShowDate, ShowStart, ShowTime, TotalSeat } = req.body;
 
-    const {
-      ShowDate_id,
-      ShowDate,     // YYYY-MM-DD
-      ShowStart,    // HH:mm
-      ShowTime,     // เช่น "02:30" หรือจำนวนนาที ตามที่ระบบเก็บ
-      TotalSeat,    // จำนวนที่นั่งใหม่ (number/string)
-    } = req.body;
-
-    const TotalSeatNew = parseInt(TotalSeat, 10);
-
-    // ตรวจสอบข้อมูลที่ต้องมี
-    if (!ShowDate_id || !ShowDate || !ShowStart || Number.isNaN(TotalSeatNew)) {
+    // ✅ ตรวจสอบข้อมูล
+    if (!ShowDate_id || !Concert_id || !ShowDate || !ShowStart || !TotalSeat) {
       return res.status(400).json({ success: false, message: "ข้อมูลไม่ครบถ้วน" });
     }
 
-    const conn = await db.getConnection();
-    try {
-      await conn.beginTransaction();
+    const TotalSeatNew = parseInt(TotalSeat, 10);
+    if (isNaN(TotalSeatNew) || TotalSeatNew <= 0) {
+      return res.status(400).json({ success: false, message: "จำนวนที่นั่งไม่ถูกต้อง" });
+    }
 
-      // 1) ดึงที่นั่งปัจจุบันของรอบนี้
-      const [seats] = await conn.query(
-        `SELECT Seat_Number, Seat_Status
-         FROM showdateandseat
-         WHERE ShowDate_id = ?
-         ORDER BY CAST(Seat_Number AS UNSIGNED)`,
+    // ✅ ดึงที่นั่งปัจจุบันของรอบนี้
+    const [seats] = await db
+      .promise()
+      .query(
+        "SELECT Seat_Number FROM showdateandseat WHERE ShowDate_id = ? ORDER BY LENGTH(Seat_Number), Seat_Number",
         [ShowDate_id]
       );
 
-      const currentCount = seats.length;
+    const currentCount = seats.length;
 
-      // 2) ถ้าต้องลดจำนวนที่นั่ง
-      if (TotalSeatNew < currentCount) {
-        const toDeleteCount = currentCount - TotalSeatNew;
+    // ✅ ถ้าต้องลดจำนวนที่นั่ง
+    if (TotalSeatNew < currentCount) {
+      const toDelete = currentCount - TotalSeatNew;
 
-        // ตรวจว่าที่นั่งส่วนเกินเป็น "ว่าง" เพียงพอสำหรับลบหรือไม่
-        const [deletableRows] = await conn.query(
-          `SELECT Seat_Number
-           FROM showdateandseat
-           WHERE ShowDate_id = ?
-             AND CAST(Seat_Number AS UNSIGNED) > ?
-             AND Seat_Status = 'ว่าง'`,
-          [ShowDate_id, TotalSeatNew]
+      // ลบจากท้าย (ใช้ ORDER BY DESC)
+      await db
+        .promise()
+        .query(
+          "DELETE FROM showdateandseat WHERE ShowDate_id = ? ORDER BY LENGTH(Seat_Number) DESC, Seat_Number DESC LIMIT ?",
+          [ShowDate_id, toDelete]
         );
+    }
 
-        if (deletableRows.length < toDeleteCount) {
-          // มีเก้าอี้เกินที่ถูกจอง → ยกเลิกการอัปเดตและแจ้งเตือน
-          await conn.rollback();
-          return res.status(409).json({
-            success: false,
-            message: "ไม่สามารถลดจำนวนที่นั่งได้: มีที่นั่งส่วนเกินที่ถูกจองอยู่",
-            detail: {
-              currentCount,
-              requested: TotalSeatNew,
-              deletable: deletableRows.length,
-              needDelete: toDeleteCount,
-            },
-          });
-        }
+    // ✅ ถ้าต้องเพิ่มที่นั่ง
+    if (TotalSeatNew > currentCount) {
+      const addCount = TotalSeatNew - currentCount;
 
-        // ลบที่นั่งส่วนเกิน (หมายเลข > ใหม่ และสถานะว่าง)
-        await conn.query(
-          `DELETE FROM showdateandseat
-           WHERE ShowDate_id = ?
-             AND CAST(Seat_Number AS UNSIGNED) > ?
-             AND Seat_Status = 'ว่าง'`,
-          [ShowDate_id, TotalSeatNew]
-        );
+      // ✅ ดึงชื่อที่นั่งทั้งหมดจากตาราง seat
+      const [seatList] = await db
+        .promise()
+        .query("SELECT Seat_Number FROM seat ORDER BY LENGTH(Seat_Number), Seat_Number");
+
+      if (seatList.length === 0) {
+        return res.status(400).json({ success: false, message: "ไม่พบข้อมูลที่นั่งในตาราง seat" });
       }
 
-      // 3) ถ้าต้องเพิ่มจำนวนที่นั่ง
-      if (TotalSeatNew > currentCount) {
-        const values = [];
-        for (let i = currentCount + 1; i <= TotalSeatNew; i++) {
-          values.push([ShowDate_id, String(i), "ว่าง"]);
-        }
-        if (values.length > 0) {
-          await conn.query(
-            `INSERT INTO showdateandseat (ShowDate_id, Seat_Number, Seat_Status)
-             VALUES ?`,
+      // ✅ หาที่นั่งล่าสุดในรอบนี้ เพื่อเริ่มต่อ
+      const [lastSeat] = await db
+        .promise()
+        .query(
+          "SELECT Seat_Number FROM showdateandseat WHERE ShowDate_id = ? ORDER BY LENGTH(Seat_Number) DESC, Seat_Number DESC LIMIT 1",
+          [ShowDate_id]
+        );
+
+      let startIndex = 0;
+      if (lastSeat.length > 0) {
+        const lastSeatNum = lastSeat[0].Seat_Number;
+        const index = seatList.findIndex((s) => s.Seat_Number === lastSeatNum);
+        startIndex = index + 1; // เริ่มต่อจากตัวล่าสุด
+      }
+
+      // ✅ เตรียมข้อมูลที่จะเพิ่ม
+      const values = [];
+      for (let i = startIndex; i < startIndex + addCount && i < seatList.length; i++) {
+        values.push([ShowDate_id, Concert_id, seatList[i].Seat_Number, "ว่าง"]);
+      }
+
+      if (values.length > 0) {
+        await db
+          .promise()
+          .query(
+            "INSERT INTO showdateandseat (ShowDate_id, Concert_id, Seat_Number, Status) VALUES ?",
             [values]
           );
-        }
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "ไม่สามารถเพิ่มที่นั่งได้ — ไม่มีชื่อที่นั่งในตาราง seat เพียงพอ",
+        });
       }
+    }
 
-      // 4) อัปเดตข้อมูลรอบการแสดงในตาราง showdate
-      const [result] = await conn.query(
-        `UPDATE showdate
-         SET ShowDate = ?, ShowStart = ?, ShowTime = ?, TotalSeat = ?
-         WHERE ShowDate_id = ?`,
+    //  อัปเดต showdate
+    await db
+      .promise()
+      .query(
+        "UPDATE showdate SET ShowDate = ?, ShowStart = ?, ShowTime = ?, TotalSeat = ? WHERE ShowDate_id = ?",
         [ShowDate, ShowStart, ShowTime || null, TotalSeatNew, ShowDate_id]
       );
 
-      if (result.affectedRows === 0) {
-        await conn.rollback();
-        return res.status(404).json({
-          success: false,
-          message: "ไม่พบรอบการแสดง หรือไม่มีการเปลี่ยนแปลงข้อมูล",
-        });
-      }
-
-      await conn.commit();
-      return res.json({
-        success: true,
-        message: "อัปเดตรอบการแสดงสำเร็จและปรับจำนวนที่นั่งเรียบร้อย",
-        data: {
-          ShowDate_id,
-          ShowDate,
-          ShowStart,
-          ShowTime: ShowTime || null,
-          TotalSeat: TotalSeatNew,
-          previousSeatCount: currentCount,
-        },
-      });
-    } catch (err) {
-      console.error("UpdateShowDate TX error:", err);
-      await conn.rollback();
-      return res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดจากฐานข้อมูล" });
-    } finally {
-      conn.release();
-    }
-  } catch (error) {
-    console.error("UpdateShowDate error:", error);
-    return res.status(500).json({ success: false, message: "Internal server error." });
+    res.json({
+      success: true,
+      message: "อัปเดตรอบการแสดงสำเร็จ",
+    });
+  } catch (err) {
+    console.error("UpdateShowDate Error:", err);
+    res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในระบบ" });
   }
 });
+
+
+router.get("/ShowdateandConcertCard", async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        c.Concert_id,
+        c.ConcertName,
+        c.Price,
+        c.Details,
+        c.Poster,
+        c.OpenSaleDate,
+        c.OpenSaleTimes,
+        c.Admin_id,
+        sd.ShowDate,
+        sd.ShowStart,
+        MAX(sd.ShowDate) AS LastShowDate,
+        MAX(sd.ShowStart) AS LastShowStart,
+        COUNT(CASE WHEN s.Status = 'ว่าง' THEN 1 END) AS AvailableSeats,
+        CONCAT(MAX(sd.ShowDate), ' ', MAX(sd.ShowStart)) AS ShowDateTime,
+        CONCAT(c.OpenSaleDate, ' ', c.OpenSaleTimes) AS SaleDateTime
+      FROM concert c
+      JOIN showdate sd ON c.Concert_id = sd.Concert_id
+      JOIN showdateandseat s ON sd.ShowDate_id = s.ShowDate_id
+      GROUP BY c.Concert_id
+      ORDER BY c.OpenSaleDate ASC, c.OpenSaleTimes ASC;
+    `;
+
+    const [rows] = await db.promise().query(sql);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching showdate:", err);
+    res.status(500).json({
+      message: "Database error",
+      error: err.message || err,
+    });
+  }
+});
+
 
 
 module.exports = router;

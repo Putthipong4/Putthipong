@@ -39,10 +39,9 @@ app.use(cookieParser());
 const initMySQL = async () => {
   db = await mysql.createConnection({
     host: "localhost",
-    user: "concert",
-    password: "123456789",
-    database: "concertticket",
-
+    user: "letmepass",
+    password: "1234",
+    database: "concertticketfinal",
   });
 };
 
@@ -77,7 +76,7 @@ app.post('/api/login', async (req, res) => {
         return res.status(400).send({ message: 'รหัสผ่านไม่ถูกต้อง' });
       }
       // สร้าง JWT token สำหรับ admin
-      const token = jwt.sign({ email, role: 'admin' }, secret, { expiresIn: '24h' });
+      const token = jwt.sign({ email, Admin_id: adminData.Admin_id  , role: 'admin' }, secret, { expiresIn: '24h' });
       res.cookie('token', token, {
         maxAge: 24 * 60 * 60 * 1000,
         secure: true,
@@ -102,7 +101,7 @@ app.post('/api/login', async (req, res) => {
       }
 
       // สร้าง JWT token สำหรับ member
-      const token = jwt.sign({ email, role: 'member' }, secret, { expiresIn: '24h' });
+      const token = jwt.sign({ email,Member_id: memberData.Member_id, role: 'member' }, secret, { expiresIn: '24h' });
       res.cookie('token', token, {
         maxAge: 24 * 60 * 60 * 1000,
         secure: true,

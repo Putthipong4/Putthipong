@@ -156,7 +156,7 @@ const CancelPayment = async () => {
           ที่นั่งที่คุณเลือก : {selectedSeats.join(", ")}
         </p>
         <p className="kanit-medium text-center text-xl">
-          ราคารวม : {totalPrice} บาท
+          ราคารวม : {Number(totalPrice).toLocaleString()}บาท
         </p>
       </div>
 

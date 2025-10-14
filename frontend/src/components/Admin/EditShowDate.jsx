@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import SidebarAdmin from "./SidebarAdmin";
 import Breadcrumbs from "./Breadcrumbs";
 import Axios from "axios";
+import Swal from "sweetalert2";
 import { useParams, useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 
 function EditShowDate() {
   const navigate = useNavigate();
@@ -14,13 +16,16 @@ function EditShowDate() {
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
-    ShowDate: "",   // YYYY-MM-DD
-    ShowStart: "",  // HH:mm
-    ShowTime: "",   // ข้อความ/นาที ตามที่ระบบคุณเก็บ
-    TotalSeat: "",  // จำนวนที่นั่งทั้งหมดของรอบนี้
+    ShowDate: "",
+    ShowStart: "",
+    ShowTime: "",
+    TotalSeat: "",
   });
 
-  // เช็คสิทธิ์ admin — เรียกครั้งเดียว
+   const [concertId, setConcertId] = useState("");
+  const [originalSeat, setOriginalSeat] = useState("");
+
+  //  ตรวจสอบสิทธิ์ admin
   useEffect(() => {
     Axios.get("http://localhost:3001/api/admin/checkAuthAdmin", {
       withCredentials: true,
@@ -29,41 +34,32 @@ function EditShowDate() {
       .catch(() => setUser(null));
   }, []);
 
-  // ดึงข้อมูลรอบการแสดง
+  //  ดึงข้อมูลรอบการแสดง
   useEffect(() => {
     let mounted = true;
     setLoading(true);
+
     Axios.get(`http://localhost:3001/api/concert/showdate/${ShowDate_id}`)
       .then((res) => {
         if (!mounted) return;
-        console.log("ShowDate payload:", res.data); // 👈 ดูโครงสร้างจริง
+        const d = Array.isArray(res.data) ? res.data[0] || {} : res.data || {};
 
-        // รองรับทั้ง array และ object
-        const d = Array.isArray(res.data) ? res.data[0] || {} : (res.data || {});
-
-        // --- แปลงวันที่เป็น YYYY-MM-DD ---
-        // กรณี API ส่ง yyyy-mm-ddTHH:mm:ss หรือ yyyy-mm-dd ให้ดึง 10 ตัวแรกพอ
-        let formattedDate = "";
-        if (d.ShowDate) {
-          const s = String(d.ShowDate);
-          formattedDate = s.length >= 10 ? s.slice(0, 10) : s; // "2025-10-08"
-        }
-
-        // --- แปลงเวลาเริ่มเป็น HH:mm ---
-        // รองรับทั้ง "HH:mm:ss" และ "HH:mm"
-        let formattedStart = "";
-        if (d.ShowStart) {
-          const t = String(d.ShowStart);
-          // ถ้าเป็น "HH:mm:ss" ให้ตัดเหลือ 5 ตัวแรก
-          formattedStart = t.length >= 5 ? t.slice(0, 5) : t;
-        }
+        const formattedDate = d.ShowDate
+  ? dayjs(d.ShowDate).format("YYYY-MM-DD")
+  : "";
+        const formattedStart = d.ShowStart
+          ? String(d.ShowStart).slice(0, 5)
+          : "";
 
         setFormData({
-          ShowDate: formattedDate || "",
-          ShowStart: formattedStart || "",
+          ShowDate: formattedDate,
+          ShowStart: formattedStart,
           ShowTime: d.ShowTime ? String(d.ShowTime) : "",
           TotalSeat: d.TotalSeat != null ? String(d.TotalSeat) : "",
         });
+
+        setOriginalSeat(d.TotalSeat || "");
+        setConcertId(d.Concert_id || "");
         setError("");
       })
       .catch((err) => {
@@ -71,53 +67,80 @@ function EditShowDate() {
         setError("ไม่สามารถโหลดข้อมูลรอบการแสดงได้");
       })
       .finally(() => setLoading(false));
+
     return () => {
       mounted = false;
     };
   }, [ShowDate_id]);
 
+  //  handle change
   const handleChange = (e) => {
     const { name, value } = e.target;
 
     if (name === "TotalSeat") {
       const onlyNum = value.replace(/\D/g, "");
       setFormData((prev) => ({ ...prev, [name]: onlyNum }));
-      return;
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
-    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  //  handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.ShowDate || !formData.ShowStart || !formData.TotalSeat) {
-      alert("กรุณากรอก วันแสดง เวลาเริ่ม และจำนวนที่นั่ง");
+      Swal.fire("แจ้งเตือน", "กรุณากรอก วันแสดง เวลาเริ่ม และจำนวนที่นั่ง", "warning");
       return;
+    }
+
+    // ถ้าลดจำนวนที่นั่ง ให้เตือนก่อน
+    if (parseInt(formData.TotalSeat) < parseInt(originalSeat)) {
+      const confirm = await Swal.fire({
+        title: "ยืนยันการลดจำนวนที่นั่ง?",
+        text: "บางที่นั่งอาจถูกจองอยู่ การลดจำนวนอาจไม่สำเร็จ",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "ตกลง",
+        cancelButtonText: "ยกเลิก",
+      });
+      if (!confirm.isConfirmed) return;
     }
 
     setSaving(true);
     try {
-      const data = new FormData();
-      data.append("ShowDate_id", ShowDate_id);
-      data.append("ShowDate", formData.ShowDate);   // YYYY-MM-DD
-      data.append("ShowStart", formData.ShowStart); // HH:mm
-      data.append("ShowTime", formData.ShowTime);
-      data.append("TotalSeat", formData.TotalSeat);
-
-      await Axios.put(
+      const response = await Axios.put(
         "http://localhost:3001/api/concert/UpdateShowDate",
-        data,
+        {
+          ShowDate_id,
+          Concert_id: concertId,
+          ShowDate: formData.ShowDate,
+          ShowStart: formData.ShowStart,
+          ShowTime: formData.ShowTime,
+          TotalSeat: formData.TotalSeat,
+        },
         {
           withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: { "Content-Type": "application/json" },
         }
       );
 
-      alert("อัปเดตรอบการแสดงสำเร็จ");
-      navigate("/admin/showdate");
+      Swal.fire({
+        title: "สำเร็จ!",
+        text: response.data.message || "อัปเดตรอบการแสดงสำเร็จ",
+        icon: "success",
+      }).then(() => navigate("/admin/showdate"));
     } catch (err) {
       console.error("Update error:", err);
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      const msg =
+        err.response?.data?.message ||
+        "เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง";
+
+      Swal.fire({
+        title: "ไม่สามารถอัปเดตได้",
+        text: msg,
+        icon: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -193,15 +216,30 @@ function EditShowDate() {
                 </div>
 
                 <div>
-                  <label className="label kanit-medium text-lg">จำนวนที่นั่งทั้งหมด</label>
+                  <label className="label kanit-medium text-lg">จำนวนที่นั่ง</label>
                   <input
-                    type="text"
+                    type="number"
                     name="TotalSeat"
                     className="input input-lg input-bordered kanit-medium w-full"
                     value={formData.TotalSeat}
-                    onChange={handleChange}
-                    required
-                  />
+                    onChange={(e) => {
+                          const value = e.target.value;
+                          if (Number(value) > 500) {
+                            Swal.fire({
+                              icon: "warning",
+                              title: "จำนวนที่นั่งเกินกำหนด!",
+                              text: "ไม่สามารถระบุเกิน 500 ที่นั่งได้",
+                              confirmButtonText: "ตกลง",
+                              confirmButtonColor: "#d33",
+                            });
+                            return; 
+                          }
+                          setFormData((prev) => ({ ...prev, TotalSeat: value }));
+                        }}
+                      />
+                      <p className="text-sm text-gray-500 mt-1">
+                        * จำนวนสูงสุดไม่เกิน 500 ที่นั่ง
+                      </p>
                 </div>
               </div>
 

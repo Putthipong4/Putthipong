@@ -31,7 +31,7 @@ router.post("/AcceptIdcard", async (req, res) => {
       const numericPart = parseInt(lastId.substring(1));
       newOrderId = "O" + (numericPart + 1).toString().padStart(2, "0");
     }
-   
+
     for (let i = 0; i < Seat_Number.length; i++) {
       const seat = Seat_Number[i];
       const idcard = IDCARD[i];
@@ -59,7 +59,7 @@ router.post("/AcceptIdcard", async (req, res) => {
 });
 
 router.put("/CancelOrder", async (req, res) => {
-  const { Seat_Number,  Order_id,  ShowDate_id } = req.body;
+  const { Seat_Number, Order_id, ShowDate_id } = req.body;
 
   try {
 
@@ -122,13 +122,13 @@ router.get("/MyTicket/:memberId", authenticateToken, async (req, res) => {
     );
 
     const tickets = rows.map(ticket => {
-  const orderTime = new Date(ticket.order_datetime);
-  const expireTime = new Date(orderTime.getTime() + 2 * 60 * 1000);
-  return {
-    ...ticket,
-    expireTime: expireTime.toISOString()
-  };
-});
+      const orderTime = new Date(ticket.order_datetime);
+      const expireTime = new Date(orderTime.getTime() + 2 * 60 * 1000);
+      return {
+        ...ticket,
+        expireTime: expireTime.toISOString()
+      };
+    });
 
     res.json({ success: true, data: tickets });
   } catch (err) {
@@ -180,7 +180,7 @@ router.get("/Order/:id", async (req, res) => {
       success: true,
       data: {
         ...order,
-        expireTime, 
+        expireTime,
       },
     });
   } catch (error) {
@@ -193,10 +193,10 @@ const multer = require("multer");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-      cb(null, "uploads/payment"); 
+    cb(null, "uploads/payment");
   },
   filename: function (req, file, cb) {
-    cb(null, file.originalname); 
+    cb(null, file.originalname);
   }
 });
 
@@ -287,7 +287,7 @@ router.get("/AllOrder", authenticateToken, async (req, res) => {
 });
 
 
-router.get("/DetailOrder/:id",  async (req, res) => {
+router.get("/DetailOrder/:id", async (req, res) => {
   const Order_id = req.params.id;
   try {
     const [results] = await db
@@ -340,7 +340,7 @@ router.put("/ChangeOrder", authenticateToken, async (req, res) => {
     } else {
       await db.promise().query(
         "UPDATE `order` SET Status_id = ?, Admin_confirm_time = NOW(), Admin_id = ? WHERE Order_id = ?",
-        [Status_id,  Admin_id, Order_id]
+        [Status_id, Admin_id, Order_id]
       );
     }
 
@@ -354,7 +354,7 @@ router.put("/ChangeOrder", authenticateToken, async (req, res) => {
 });
 
 
-router.get("/OrderQrcode/:id", authenticateToken,  async (req, res) => {
+router.get("/OrderQrcode/:id", authenticateToken, async (req, res) => {
   const Order_id = req.params.id;
   try {
     const [results] = await db
@@ -378,7 +378,7 @@ router.get("/OrderQrcode/:id", authenticateToken,  async (req, res) => {
       WHERE Order_id = ?
       `, [Order_id]);
 
-   res.json(results);
+    res.json(results);
   } catch (error) {
     console.log("error", error);
     res.status(403).send({
@@ -423,5 +423,76 @@ router.put("/AddRating", async (req, res) => {
   }
 });
 
+router.get("/Rating", async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(`SELECT 
+    AVG(o.Rating) AS Rating,
+    c.ConcertName,
+    c.Poster,
+    c.Concert_id,
+    sd.ShowDate
+FROM \`order\` o
+JOIN concert c ON c.Concert_id = o.Concert_id
+JOIN showdate sd ON sd.ShowDate_id = o.ShowDate_id
+WHERE o.Rating IS NOT NULL
+GROUP BY c.Concert_id
+ORDER BY c.Concert_id ASC`)
+    res.json(rows);
+  } catch (err) {
+    console.error("Server error", err);
+    res.status(500).send({ error: "Internal server error" });
+  }
+})
+
+router.get("/Receipt/:Order_id", async (req, res) => {
+  const { Order_id } = req.params;
+
+  try {
+    const [rows] = await db.promise().query(
+      `
+      SELECT 
+        o.Order_id,
+        c.ConcertName,
+        m.Firstname AS MemberName,
+        m.Email,
+        m.Telephone,
+        s.ShowDate,
+        s.ShowStart,
+        GROUP_CONCAT(o.Seat_Number ORDER BY o.Seat_Number SEPARATOR ', ') AS Seat_Number,
+        o.Price,
+        SUM(o.Price) as TotalPrice,
+        r.Receipt_Date,
+        r.Slip_time
+      FROM \`order\` o
+      JOIN \`member\` m ON o.Member_id = m.Member_id
+      JOIN  \`concert\` c ON o.Concert_id = c.Concert_id
+      JOIN \`showdate\` s ON o.ShowDate_id = s.ShowDate_id
+      JOIN \`receipt\` r ON o.Receipt_id = r.Receipt_id
+      WHERE o.Order_id = ?
+      `,
+      [Order_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบข้อมูลใบเสร็จของคำสั่งซื้อนี้",
+      });
+    }
+
+    const data = rows[0];
+
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    console.error("Error fetching receipt:", err);
+    res.status(500).json({
+      success: false,
+      message: "เกิดข้อผิดพลาดในการดึงข้อมูลใบเสร็จ",
+    });
+  }
+});
 
 module.exports = router;

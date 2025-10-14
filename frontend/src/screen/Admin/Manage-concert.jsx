@@ -4,16 +4,16 @@ import Breadcrumbs from "../../components/Admin/Breadcrumbs";
 import Axios from "axios";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
-import {  Edit2,  Plus,  Trash2 } from "lucide-react";
+import { Edit2, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 
 function ManageConcert() {
-  
+
   const navigate = useNavigate();
   const [concerts, setConcerts] = useState([]);
   // ดึงข้อมูลคอนเสิร์ตจาก API
-  
+
   useEffect(() => {
     Axios.get("http://localhost:3001/api/concert/ShowdateandConcert", {
       credentials: "include",
@@ -30,76 +30,76 @@ function ManageConcert() {
   };
 
   const deleteConcert = async (Concert_id) => {
-  const result = await Swal.fire({
-    title: "ลบข้อมูลคอนเสิร์ตนี้ใช่หรือไม่",
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonText: "ใช่",
-    cancelButtonText: "ไม่",
-    customClass: {
-      title: "kanit-medium",
-      confirmButton: "kanit-medium",
-      cancelButton: "kanit-medium",
-    },
-  });
+    const result = await Swal.fire({
+      title: "ลบข้อมูลคอนเสิร์ตนี้ใช่หรือไม่",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "ใช่",
+      cancelButtonText: "ไม่",
+      customClass: {
+        title: "kanit-medium",
+        confirmButton: "kanit-medium",
+        cancelButton: "kanit-medium",
+      },
+    });
 
-  if (result.isConfirmed) {
-    try {
-      await Axios.delete(`http://localhost:3001/api/concert/delete/${Concert_id}`);
-      await Swal.fire({
-        title: "ลบสำเร็จ",
-        icon: "success",
-        confirmButtonText: "รับทราบ!",
-        customClass: {
-          title: "kanit-medium",
-          confirmButton: "kanit-medium",
-        },
-      });
-      getConcerts();
-    } catch (err) {
-      console.error(" Delete error:", err.response?.data || err.message);
-      await Swal.fire({
-        title: "ลบไม่สำเร็จ",
-        text: err.response?.data?.error || "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์",
-        icon: "error",
-        confirmButtonText: "ปิด",
-        customClass: {
-          title: "kanit-medium",
-          confirmButton: "kanit-medium",
-        },
-      });
+    if (result.isConfirmed) {
+      try {
+        await Axios.delete(`http://localhost:3001/api/concert/delete/${Concert_id}`);
+        await Swal.fire({
+          title: "ลบสำเร็จ",
+          icon: "success",
+          confirmButtonText: "รับทราบ!",
+          customClass: {
+            title: "kanit-medium",
+            confirmButton: "kanit-medium",
+          },
+        });
+        getConcerts();
+      } catch (err) {
+        console.error(" Delete error:", err.response?.data || err.message);
+        await Swal.fire({
+          title: "ลบไม่สำเร็จ",
+          text: err.response?.data?.error || "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์",
+          icon: "error",
+          confirmButtonText: "ปิด",
+          customClass: {
+            title: "kanit-medium",
+            confirmButton: "kanit-medium",
+          },
+        });
+      }
     }
-  }
-};
+  };
 
-const closeConcert = async (Concert_id) => {
-  const result = await Swal.fire({
-    title: "ต้องการปิดคอนเสิร์ตนี้หรือไม่?",
-    text: "ระบบจะตั้งที่นั่งทั้งหมดของคอนเสิร์ตนี้เป็น 'จองแล้ว' (Sold Out)",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "ใช่, ปิดคอนเสิร์ต",
-    cancelButtonText: "ยกเลิก",
-  });
+  const closeConcert = async (Concert_id) => {
+    const result = await Swal.fire({
+      title: "ต้องการปิดคอนเสิร์ตนี้หรือไม่?",
+      text: "ระบบจะตั้งที่นั่งทั้งหมดของคอนเสิร์ตนี้เป็น 'จองแล้ว' (Sold Out)",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "ใช่, ปิดคอนเสิร์ต",
+      cancelButtonText: "ยกเลิก",
+    });
 
-  if (result.isConfirmed) {
-    try {
-      await Axios.put(`http://localhost:3001/api/concert/close/${Concert_id}`);
-      await Swal.fire("ปิดคอนเสิร์ตสำเร็จ!", "ที่นั่งทั้งหมดถูกจองแล้ว", "success");
-      getConcerts();
-    } catch {
-      Swal.fire("เกิดข้อผิดพลาด", "ไม่สามารถปิดคอนเสิร์ตได้", "error");
+    if (result.isConfirmed) {
+      try {
+        await Axios.put(`http://localhost:3001/api/concert/close/${Concert_id}`);
+        await Swal.fire("ปิดคอนเสิร์ตสำเร็จ!", "ที่นั่งทั้งหมดถูกจองแล้ว", "success");
+        getConcerts();
+      } catch {
+        Swal.fire("เกิดข้อผิดพลาด", "ไม่สามารถปิดคอนเสิร์ตได้", "error");
+      }
     }
-  }
-};
+  };
 
 
   const uniqueConcerts = concerts.reduce((acc, curr) => {
-  if (!acc.some(c => c.Concert_id === curr.Concert_id)) {
-    acc.push(curr);
-  }
-  return acc;
-}, []);
+    if (!acc.some(c => c.Concert_id === curr.Concert_id)) {
+      acc.push(curr);
+    }
+    return acc;
+  }, []);
 
 
 
@@ -124,7 +124,7 @@ const closeConcert = async (Concert_id) => {
         {/* เนื้อหาหลักของหน้านี้ */}
         <h1 className="kanit-medium mb-4 text-3xl">จัดการคอนเสิร์ต</h1>
         <div className="cursor-pointer ml-auto p-2 " >
-          <Plus size={30} color="SpringGreen" onClick={()=> navigate('/admin/AddConcert')}/>
+          <Plus size={30} color="SpringGreen" onClick={() => navigate('/admin/AddConcert')} />
         </div>
 
         {/* ใส่ตารางหรือ card ที่แสดงคอนเสิร์ตต่างๆ ได้ที่นี่ */}
@@ -171,14 +171,14 @@ const closeConcert = async (Concert_id) => {
                   </td>
                   <td>
                     <div className="flex gap-4 justify-center">
-                      <Edit2 className="cursor-pointer" color="#FFFF99" onClick={() => navigate(`/admin/EditConcert/${concert.Concert_id}`)}/>
+                      <Edit2 className="cursor-pointer" color="#FFFF99" onClick={() => navigate(`/admin/EditConcert/${concert.Concert_id}`)} />
                       <Trash2 onClick={() => deleteConcert(concert.Concert_id, concert.ShowDate_id)} className="cursor-pointer" color="#FF6666" />
-                        <button
-  className="btn btn-error btn-sm"
-  onClick={() => closeConcert(concert.Concert_id)}
->
-  ปิดการขาย
-</button>
+                      <button
+                        className="btn btn-error btn-sm"
+                        onClick={() => closeConcert(concert.Concert_id)}
+                      >
+                        ปิดการขาย
+                      </button>
                     </div>
                   </td>
                 </tr>

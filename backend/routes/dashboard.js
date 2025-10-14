@@ -54,9 +54,7 @@ WHERE Admin_id IS NOT NULL`);
 
 router.get("/order/chart/monthly", async (req, res) => {
   try {
-    const { start, end } = req.query; // ดึง query string จาก URL
-
-    // ถ้าไม่ได้กำหนด start/end → ใช้ค่า default (ทั้งปี)
+    const { start, end } = req.query;
     const startDate = start || "2025-01-01";
     const endDate = end || "2025-12-31";
 
@@ -96,7 +94,7 @@ router.get("/order/concert", async (req, res) => {
         COUNT(o.Order_id) AS totalorders
       FROM \`order\` o
       JOIN concert c ON o.Concert_id = c.Concert_id
-      WHERE o.Admin_id IS NOT NULL
+      WHERE o.Admin_id IS NOT NULL AND o.Price IS NOT NULL
     `;
 
     const params = [];
@@ -117,6 +115,39 @@ router.get("/order/concert", async (req, res) => {
   }
 });
 
+
+// GET /api/dashboard/order/chart/daily?date=YYYY-MM-DD
+router.get("/order/chart/daily", async (req, res) => {
+  try {
+    const { start, end } = req.query;
+
+    // ถ้าไม่มี query parameters
+    if (!start || !end) {
+      return res.status(400).json({
+        success: false,
+        message: "กรุณาระบุ start และ end ใน query string เช่น ?start=2025-10-01&end=2025-10-15",
+      });
+    }
+
+    const [rows] = await db.promise().query(
+      `
+      SELECT 
+        DATE(Order_Date) AS date,
+        SUM(Price) AS totalprice
+      FROM \`order\`
+      WHERE Order_Date BETWEEN ? AND ?
+      GROUP BY DATE(Order_Date)
+      ORDER BY DATE(Order_Date)
+      `,
+      [start, end]
+    );
+
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error("Error fetching daily sales:", error);
+    res.status(500).json({ success: false, message: "Error fetching daily sales" });
+  }
+});
 
 
 

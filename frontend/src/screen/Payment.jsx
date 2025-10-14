@@ -251,7 +251,7 @@ function Payment() {
               <p className="text-md text-gray-500">
                 จำนวนเงิน:{" "}
                 <span className="font-bold text-green-600">
-                  {totalPrice} บาท
+                  {Number(totalPrice).toLocaleString()} บาท
                 </span>
               </p>
               {/* Countdown */}

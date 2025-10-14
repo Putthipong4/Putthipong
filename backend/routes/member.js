@@ -58,7 +58,7 @@ router.post('/register', async (req, res) => {
 
 router.get('/checkAuth', authenticateToken, async (req, res) => {
   try {
-    const [results] = await db.promise().query('SELECT * FROM member WHERE email = ?', [req.user.email])
+    const [results] = await db.promise().query('SELECT * FROM member WHERE Member_id = ?', [req.user.Member_id])
     if (!results[0]) {
       return res.status(404).json({ message: 'User not found', password });
     }

@@ -36,6 +36,11 @@ function MyTicket() {
       t.Status_Name === "ชำระเงินเสร็จสมบูรณ์"
   );
 
+  const cancelTickets = tickets.filter(
+    (t) => t.Status_Name === "ยกเลิกคำสั่งซื้อเนื่องจากไม่ชำระเงินตามกำหนด ยกเลิกโดยระบบ" || t.Status_Name === "ยกเลิกคำสั่งซื้อเนื่องจากชำระเงินไม่ถูกต้อง ยกเลิกโดยผู้ดูแลระบบ"
+
+  );
+
 
   useEffect(() => {
     if (!memberId) return;
@@ -124,7 +129,6 @@ function MyTicket() {
             icon: "info",
           });
 
-          // mark ว่าตั๋วนี้ถูกยกเลิกแล้วกัน popup เด้งซ้ำ
           setCancelledOrders((prev) => new Set(prev).add(ticket.Order_id));
 
           refreshTickets();
@@ -168,13 +172,13 @@ function MyTicket() {
         <p className="text-xl font-extrabold text-green-700 kanit-medium m-4">
           ยอดรวมทั้งหมด: {totalAll.toLocaleString()} บาท
         </p>
-        {/* 🎟 ตั๋วที่รอการชำระ */}
+        {/*  ตั๋วที่รอการชำระ */}
         <section className="mb-12 kanit-medium">
           <h2 className="text-2xl font-bold text-yellow-600 mb-6 flex items-center gap-2">
-            <span className="text-3xl"></span> ตั๋วที่รอการชำระเงิน
+            <span className="text-3xl"></span> บัตรที่รอการชำระเงิน
           </h2>
           {pendingTickets.length === 0 ? (
-            <p className="text-gray-500 italic">ไม่มีตั๋วที่รอการชำระ</p>
+            <p className="text-gray-500 italic">ไม่มีบัตรที่รอการชำระ</p>
           ) : (
             <div className="grid gap-5">
               {pendingTickets.map((ticket) => (
@@ -210,20 +214,20 @@ function MyTicket() {
           )}
         </section>
 
-        {/*  ตั๋วที่ชำระแล้ว */}
+
         <section className="kanit-medium">
           <h2 className="text-2xl font-bold text-green-600 mb-6 flex items-center gap-2">
-            <span className="text-3xl"></span> ตั๋วที่ชำระเงินแล้ว
+            <span className="text-3xl"></span> บัตรที่ชำระเงินแล้ว
           </h2>
           {paidTickets.length === 0 ? (
-            <p className="text-gray-500 italic">ยังไม่มีตั๋วที่ชำระแล้ว</p>
+            <p className="text-gray-500 italic">ยังไม่มีบัตรที่ชำระแล้ว</p>
           ) : (
             <div className="grid gap-5">
               {paidTickets.map((ticket) => {
                 const showDateTime = dayjs(`${ticket.ShowDateTime}`);
                 const durationHours = Number(ticket.ShowTime) || 0;
                 const endShowTime = showDateTime.add(durationHours, "hour");
-                const canRate = dayjs().isAfter(endShowTime); 
+                const canRate = dayjs().isAfter(endShowTime);
 
                 const handleRating = async () => {
                   const { value: rating } = await Swal.fire({
@@ -330,36 +334,95 @@ function MyTicket() {
                     <p className="text-gray-600">ที่นั่ง: {ticket.Seat_Number}</p>
                     <p className="text-gray-800 font-bold mt-2">
                       ราคารวม:{" "}
-                      {ticket.Seat_Number.split(", ").filter((s) => s.trim() !== "").length *
-                        Number(ticket.Price)}{" "}
+                      {(
+                        ticket.Seat_Number.split(", ")
+                          .filter((s) => s.trim() !== "").length * Number(ticket.Price)
+                      ).toLocaleString("th-TH")}{" "}
                       บาท
                     </p>
 
                     {/*  แสดงปุ่มให้คะแนนถ้าเลยเวลาแสดงแล้ว */}
-                    {canRate && !ticket.Rating && (
-                      <button
-                        className="btn btn-outline btn-success mt-3"
-                        onClick={(e) => {
-                          e.stopPropagation(); // ป้องกันไม่ให้คลิกไปยัง QrCode
-                          handleRating();
-                        }}
-                      >
-                        ให้คะแนนคอนเสิร์ต
-                      </button>
-                    )}
+                    {/*  ส่วนปุ่มด้านล่าง */}
+                    <div className="mt-5 flex justify-between items-center">
+                      <div>
+                        {/*  ปุ่มให้คะแนน หรือข้อความแทน */}
+                        {canRate && !ticket.Rating ? (
+                          <button
+                            className="btn btn-success btn-sm rounded-full px-6 shadow-md hover:scale-105 transition"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRating();
+                            }}
+                          >
+                            ให้คะแนนคอนเสิร์ต
+                          </button>
+                        ) : ticket.Rating ? (
+                          <p className="text-green-600 font-semibold">
+                            คุณให้คะแนนแล้ว: {ticket.Rating} ดาว
+                          </p>
+                        ) : null}
+                      </div>
 
-                    {/*  ถ้าเคยให้คะแนนแล้ว แสดงข้อความแทน */}
-                    {ticket.Rating && (
-                      <p className="text-green-600 font-semibold mt-3">
-                        คุณให้คะแนนแล้ว:   {ticket.Rating} ดาว
-                      </p>
-                    )}
+                      <div>
+                        {/* ปุ่มดูใบเสร็จ (เฉพาะสถานะ 'ชำระเงินเสร็จสมบูรณ์') */}
+                        {ticket.Status_Name === "ชำระเงินเสร็จสมบูรณ์" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/Receipt/${ticket.Order_id}`);
+                            }}
+                            className="btn btn-outline btn-primary btn-sm rounded-full px-6 shadow hover:bg-blue-600 hover:text-white transition"
+                          >
+                            ดูใบเสร็จ
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
                   </div>
                 );
               })}
+            </div>
+          )}
+        </section>
+
+        {/*  ตั๋วที่โดนยกเลิก */}
+        <section className="kanit-medium">
+          <h2 className="text-2xl font-bold  text-red-500 mb-6 flex items-center gap-2 mt-8">
+            <span className="text-3xl "></span> บัตรที่ยกเลิก
+          </h2>
+          {cancelTickets.length === 0 ? (
+            <p className="text-gray-500 italic">ยังไม่มีบัตรที่โดนยกเลิก</p>
+          ) : (
+            <div className="grid gap-5">
+              {cancelTickets.map((ticket) => {
 
 
+                return (
+                  <div
+                    key={ticket.Order_id}
+                    className="bg-white p-5 rounded-2xl shadow-lg border border-green-200 hover:shadow-xl transition cursor-pointer"
+                  >
+                    <div className="flex justify-between items-center">
+                      <p className="font-bold text-xl text-gray-800">
+                        {ticket.ConcertName}
+                      </p>
+                      <span className="badge badge-error text-white px-3 py-1">
+                        {ticket.Status_Name}
+                      </span>
+                    </div>
 
+                    <p className="text-gray-600 mt-2">
+                      รอบแสดง:{" "}
+                      {dayjs(ticket.ShowDate).locale("th").format("D MMMM YYYY")}{" "}
+                      {ticket.ShowStart.slice(0, 5)} น.
+                    </p>
+                    <p className="text-gray-600">ที่นั่ง: {ticket.Seat_Number}</p>
+                    <p className="text-gray-800 font-bold mt-2">
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>

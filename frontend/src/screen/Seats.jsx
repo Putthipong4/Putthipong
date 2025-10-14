@@ -254,14 +254,14 @@ function Seats() {
             <div className="flex justify-between border-b pb-2">
               <span className="kanit-medium text-lg text-gray-700">ราคาบัตร ( 1 บัตร )</span>
               <span className="kanit-medium text-lg text-black">
-                {seats.length > 0 ? `${seats[0].Price} บาท` : "-"}
+                {seats.length > 0 ? `${Number(seats[0].Price).toLocaleString()} บาท` : "-"}
               </span>
             </div>
 
             <div className="flex justify-between border-b pb-2">
               <span className="kanit-medium text-lg text-gray-700">ราคารวม</span>
               <span className="kanit-medium text-lg text-black">
-                {seats.length > 0 ? `${totalPrice} บาท` : "-"}
+                {seats.length > 0 ? `${Number(totalPrice).toLocaleString()} บาท` : "-"}
               </span>
             </div>
 

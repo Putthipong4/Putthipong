@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Axios from "axios";
 import SidebarAdmin from "../../components/Admin/SidebarAdmin";
 import Breadcrumbs from "../../components/Admin/Breadcrumbs";
+import Swal from "sweetalert2";
 
 function ProfileAdmin() {
   const [formdata, setFormdata] = useState({
@@ -15,6 +16,7 @@ function ProfileAdmin() {
     confirmPassword: "",
   });
 
+  // ดึงข้อมูลผู้ดูแลระบบปัจจุบัน
   const fetchCurrentUser = () => {
     Axios.get("http://localhost:3001/api/admin/checkAuthAdmin", {
       withCredentials: true,
@@ -27,9 +29,15 @@ function ProfileAdmin() {
           Lastname: response.data.user.Lastname,
           Telephone: response.data.user.Telephone,
           Email: response.data.user.Email,
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
         }));
       })
-      .catch((error) => console.error("Error fetching current user data:", error));
+      .catch((error) => {
+        console.error("Error fetching current user data:", error);
+        Swal.fire("เกิดข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลผู้ดูแลระบบได้", "error");
+      });
   };
 
   useEffect(() => {
@@ -47,19 +55,37 @@ function ProfileAdmin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // ตรวจสอบรหัสผ่านใหม่และยืนยันรหัสผ่าน
     if (formdata.newPassword !== formdata.confirmPassword) {
-      alert("รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน");
+      Swal.fire("รหัสผ่านไม่ตรงกัน", "กรุณากรอกรหัสผ่านใหม่ให้ตรงกัน", "warning");
       return;
     }
 
     try {
+      // แสดง Loading ขณะรอการอัปเดต
+      Swal.fire({
+        title: "กำลังบันทึก...",
+        text: "โปรดรอสักครู่",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
       const response = await Axios.put(
         "http://localhost:3001/api/admin/updateProfile",
         formdata,
         { withCredentials: true }
       );
+
+      Swal.close(); // ปิด Loading
+
       if (response.data.success) {
-        alert(" อัปเดตข้อมูลสำเร็จ!");
+        await Swal.fire({
+          title: "อัปเดตสำเร็จ!",
+          text: "ข้อมูลผู้ดูแลระบบถูกบันทึกเรียบร้อยแล้ว",
+          icon: "success",
+          confirmButtonText: "ตกลง",
+        });
+
         setFormdata((prev) => ({
           ...prev,
           currentPassword: "",
@@ -67,11 +93,12 @@ function ProfileAdmin() {
           confirmPassword: "",
         }));
       } else {
-        alert( response.data.message);
+        Swal.fire("ไม่สำเร็จ", response.data.message || "ไม่สามารถอัปเดตข้อมูลได้", "error");
       }
     } catch (error) {
+      Swal.close();
       console.error("Error updating profile:", error);
-      alert("เกิดข้อผิดพลาดระหว่างการอัปเดตข้อมูล");
+      Swal.fire("เกิดข้อผิดพลาด", "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้", "error");
     }
   };
 
@@ -85,6 +112,7 @@ function ProfileAdmin() {
             { label: "โปรไฟล์ผู้ดูแลระบบ", path: "/admin/ProfileAdmin" },
           ]}
         />
+
         <h1 className="kanit-medium text-3xl mb-6">โปรไฟล์ผู้ดูแลระบบ</h1>
 
         <form onSubmit={handleSubmit}>
@@ -134,7 +162,7 @@ function ProfileAdmin() {
                 />
               </div>
 
-              {/*  เปลี่ยนรหัสผ่าน */}
+              {/* ส่วนเปลี่ยนรหัสผ่าน */}
               <hr className="my-4" />
               <h2 className="text-xl kanit-medium">เปลี่ยนรหัสผ่าน</h2>
 
@@ -179,7 +207,18 @@ function ProfileAdmin() {
               <button
                 type="button"
                 className="btn btn-error btn-lg px-10"
-                onClick={fetchCurrentUser}
+                onClick={() => {
+                  Swal.fire({
+                    title: "ยกเลิกการแก้ไข?",
+                    text: "ข้อมูลที่ยังไม่บันทึกจะหายไป",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "ตกลง",
+                    cancelButtonText: "ไม่ใช่ตอนนี้",
+                  }).then((result) => {
+                    if (result.isConfirmed) fetchCurrentUser();
+                  });
+                }}
               >
                 ยกเลิก
               </button>

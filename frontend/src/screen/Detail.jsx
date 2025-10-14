@@ -99,9 +99,9 @@ function Detail() {
               <div className="flex items-center gap-2">
                 <Calendar size={50} />
                 <div className="flex flex-col p-4">
-                  <p className="text-lg text-gray-500">วันที่แสดง</p>
+                  <p className="text-lg text-gray-500">วันเปิดจำหน่าย</p>
                   <span>
-                    {dayjs(concert.ShowDate).locale("th").format("D MMMM YYYY")}
+                    {dayjs(concert.OpenSaleDate).locale("th").format("D MMMM YYYY")}
                   </span>
                 </div>
               </div>
@@ -109,9 +109,9 @@ function Detail() {
               <div className="flex items-center gap-2">
                 <CalendarClock size={50} />
                 <div className="flex flex-col p-4">
-                  <p className="text-lg text-gray-500">วันเปิดจำหน่าย</p>
+                  <p className="text-lg text-gray-500">วันที่แสดง</p>
                   <span>
-                    {dayjs(concert.OpenSaleDate)
+                    {dayjs(concert.ShowDate)
                       .locale("th")
                       .format("D MMMM YYYY")}
                   </span>
@@ -161,10 +161,10 @@ function Detail() {
 
                     if (isComingSoon) {
                       statusText = "เร็ว ๆ นี้";
-                      statusColor = "badge badge-warning"; 
+                      statusColor = "badge badge-warning";
                     } else if (isAllSoldOut) {
                       statusText = "Sold Out";
-                      statusColor = "badge badge-error"; 
+                      statusColor = "badge badge-error";
                     }
 
                     return (
@@ -173,8 +173,6 @@ function Detail() {
                       </span>
                     );
                   })()}
-
-
                 </div>
               </div>
             </div>
@@ -214,8 +212,6 @@ function Detail() {
               <div className="loading loading-spinner text-white"></div>
             ) : (
               concert.ShowRounds &&
-              concert.OpenSaleDate &&
-              concert.OpenSaleTimes &&
               concert.ShowRounds.map((round) => {
                 const saleStart = dayjs(concert.SaleDateTime);
 
@@ -259,6 +255,19 @@ function Detail() {
 
             )}
           </div>
+        </div>
+        <h2 className="m-5 mx-auto max-w-screen-xl text-2xl font-semibold border-b pb-2 border-gray-700">
+          รายละเอียดคอนเสิร์ต
+        </h2>
+
+        <div className="mx-auto max-w-screen-xl p-4 rounded-xl shadow-md text-gray-200 leading-relaxed space-y-4">
+          {concert.Details ? (
+            <div className="whitespace-pre-line">
+              {concert.Details}
+            </div>
+          ) : (
+            <p className="text-gray-400 italic">ยังไม่มีรายละเอียดเพิ่มเติม</p>
+          )}
         </div>
       </div>
     </div>

@@ -4,6 +4,8 @@ import Breadcrumbs from "./Breadcrumbs";
 import Axios from "axios";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import dayjs from "dayjs";
 
 function EditConcert() {
   const navigate = useNavigate();
@@ -19,7 +21,7 @@ function EditConcert() {
       .catch(() => {
         setUser(null);
       })
-      .finally(() => {});
+      .finally(() => { });
   });
 
   const { Concert_id } = useParams();
@@ -40,21 +42,21 @@ function EditConcert() {
   const handleFileChange = (e) => {
     setFormData({ ...formData, Poster: e.target.files[0] });
   };
-  
-   useEffect(() => {
+
+  useEffect(() => {
     Axios.get(`http://localhost:3001/api/concert/detailsconcert/${Concert_id}`)
       .then((response) => {
         const formattedDate = response.data.OpenSaleDate
-        ? new Date(response.data.OpenSaleDate).toISOString().split("T")[0]
-        : "";
+          ? dayjs(response.data.OpenSaleDate).format("YYYY-MM-DD")
+          : "";
         setFormData({
-        ConcertName: response.data.ConcertName,
-        Price: response.data.Price,
-        OpenSaleDate: formattedDate,
-        OpenSaleTimes: response.data.OpenSaleTimes,
-        Details: response.data.Details,
-        Poster: null
-      });
+          ConcertName: response.data.ConcertName,
+          Price: response.data.Price,
+          OpenSaleDate: formattedDate,
+          OpenSaleTimes: response.data.OpenSaleTimes,
+          Details: response.data.Details,
+          Poster: null
+        });
       })
       .catch((error) => {
         console.error("Error fetching concert:", error);
@@ -79,8 +81,16 @@ function EditConcert() {
         withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert("อัปเดตสำเร็จ");
-      navigate('/admin/manage-concert')
+      Swal.fire({
+        icon: "success",
+        title: "แก้ไขคอนเสิร์ตสำเร็จ",
+        confirmButtonText: "ตกลง",
+        confirmButtonColor: "#3085d6",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/admin/manage-concert");
+        }
+      });
     } catch (error) {
       console.error(error);
       alert("เกิดข้อผิดพลาด");
@@ -133,12 +143,12 @@ function EditConcert() {
                 <label className="label kanit-medium text-lg">
                   วันเปิดจำหน่าย
                 </label>
-                <input       
+                <input
                   type="date"
                   name="OpenSaleDate"
                   className="input input-lg input-bordered kanit-medium w-full"
                   value={formData.OpenSaleDate}
-                onChange={handleChange}
+                  onChange={handleChange}
                 />
               </div>
               <div>
@@ -150,7 +160,7 @@ function EditConcert() {
                   name="OpenSaleTimes"
                   className="input input-lg input-bordered kanit-medium w-full"
                   value={formData.OpenSaleTimes}
-                onChange={handleChange}
+                  onChange={handleChange}
                 />
               </div>
             </div>

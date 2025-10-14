@@ -3,6 +3,7 @@ import Axios from "axios";
 import SidebarAdmin from './SidebarAdmin';
 import Breadcrumbs from './Breadcrumbs';
 import { useNavigate } from 'react-router-dom';
+import Swal from "sweetalert2";
 
 function Addadmin() {
 
@@ -25,7 +26,12 @@ function Addadmin() {
             !email.trim() ||
             !password.trim() 
         ) {
-            alert("กรุณากรอกข้อมูลให้ครบทุกช่อง");
+            Swal.fire({
+                    icon: "error",
+                    title: "กรุณากรอกข้อมูลให้ครบ",
+                    confirmButtonText: "ตกลง",
+                    confirmButtonColor: "#3085d6",
+                  });
             return;
         }
 
@@ -38,7 +44,13 @@ function Addadmin() {
                 Password: password.trim(),
             });
 
-            alert('เพิ่มผู้ดูแลระบบสำเร็จ');
+            Swal.fire({
+                    icon: "success",
+                    title: "เพิ่มผู้ดูแลระบบสำเร็จ",
+                    confirmButtonText: "ตกลง",
+                    confirmButtonColor: "#3085d6",
+                  });
+            
 
             // รีเซ็ตค่า input
             setFirstname("");
@@ -108,6 +120,8 @@ function Addadmin() {
                                     <label className="label kanit-medium text-lg">เบอร์โทรศัพท์</label>
                                     <input
                                         type="tel"
+                                        minLength="10"
+                                        maxLength="10"
                                         className="input input-lg input-bordered kanit-medium w-full shadow-xl"
                                         value={telephone}
                                         onChange={(e) => setTelephone(e.target.value)}

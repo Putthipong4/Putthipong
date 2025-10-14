@@ -1,7 +1,26 @@
-import React from 'react';
-import { Facebook, Instagram, Mail, Phone, FileText } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Facebook, Instagram, Mail, Phone, FileText } from "lucide-react";
+import Axios from "axios";
 
 function Footer() {
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    Axios.get("http://localhost:3001/api/member/checkAuth", {
+      withCredentials: true,
+    })
+      .then((response) => {
+        setUser(response.data.user);
+      })
+      .catch(() => {
+        setUser(null);
+      })
+      .finally(() => {
+        setIsAuthLoading(false);
+      });
+  }, []); // ✅ ให้รันครั้งเดียวตอน mount
+
   return (
     <footer className="footer bg-neutral text-neutral-content p-10 flex flex-col sm:flex-row justify-around items-start kanit-medium">
       {/* เกี่ยวกับเว็บไซต์ */}
@@ -39,22 +58,26 @@ function Footer() {
         </div>
       </nav>
 
-      {/* แบบประเมินเว็บไซต์ */}
-      <nav>
-        <h6 className="footer-title text-lg font-semibold">แบบประเมินเว็บไซต์</h6>
-        <p className="text-sm mb-2">
-          โปรดช่วยประเมินความพึงพอใจในการใช้งานเว็บไซต์ของเรา
-        </p>
-        <a
-          href="https://forms.gle/LmM7iDNs5gnJx4hx8"
-          target="_blank"
-          rel="noopener noreferrer"
-          className=" mt-2 flex items-center gap-2"
-        >
-          <FileText size={16} />
-          ทำแบบประเมิน
-        </a>
-      </nav>
+      {/* แบบประเมินเว็บไซต์ (แสดงเฉพาะเมื่อ login แล้ว) */}
+      {!isAuthLoading && user && (
+        <nav>
+          <h6 className="footer-title text-lg font-semibold">
+            แบบประเมินเว็บไซต์
+          </h6>
+          <p className="text-sm mb-2">
+            โปรดช่วยประเมินความพึงพอใจในการใช้งานเว็บไซต์ของเรา
+          </p>
+          <a
+            href="https://forms.gle/LmM7iDNs5gnJx4hx8"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 flex items-center gap-2"
+          >
+            <FileText size={16} />
+            ทำแบบประเมิน
+          </a>
+        </nav>
+      )}
     </footer>
   );
 }

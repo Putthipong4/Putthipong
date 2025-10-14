@@ -59,10 +59,8 @@ router.post('/Addadmin', async (req, res) => {
 
 router.get('/checkAuthAdmin', authenticateToken, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).send({ message: 'คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้' });
-    }
-    const [results] = await db.promise().query('SELECT * FROM admin WHERE email = ?', [req.user.email])
+
+    const [results] = await db.promise().query('SELECT * FROM admin WHERE Admin_id = ?', [req.user.Admin_id])
     if (!results[0]) {
       return res.status(404).json({ message: 'User not found', password });
     }

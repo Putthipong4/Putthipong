@@ -22,6 +22,7 @@ import Admin from './screen/Admin/Admin';
 import Addadmin from './components/Admin/Addadmin';
 import ProfileAdmin from './screen/Admin/ProfileAdmin';
 import EditShowDate from './components/Admin/EditShowDate';
+import Receipt from './screen/Receipt';
 
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
         <Route path="/admin/Addadmin" element={<Addadmin />}/>
         <Route path="/admin/ProfileAdmin" element={<ProfileAdmin />} />
         <Route path="/admin/EditShowdate/:ShowDate_id" element={<EditShowDate />} />
+        <Route path='/Receipt/:id' element={<Receipt />} />
       </Routes>
     </BrowserRouter>
   );
