@@ -39,8 +39,8 @@ app.use(cookieParser());
 const initMySQL = async () => {
   db = await mysql.createConnection({
     host: "localhost",
-    user: "letmepass",
-    password: "1234",
+    user: "root",
+    password: "",
     database: "concertticketfinal",
   });
 };

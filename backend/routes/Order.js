@@ -2,8 +2,8 @@ const express = require("express");
 const router = express.Router();
 const { authenticateToken } = require('../middlewares/auth');
 
-router.post("/AcceptIdcard", async (req, res) => {
-  const { IDCARD, Seat_Number, ShowDate_id, Member_id, Concert_id, Price } = req.body;
+router.post("/SelectSeats", async (req, res) => {
+  const { Seat_Number, ShowDate_id, Member_id, Concert_id, Price } = req.body;
 
   try {
     const [existingSeats] = await db.promise().query(
@@ -34,11 +34,10 @@ router.post("/AcceptIdcard", async (req, res) => {
 
     for (let i = 0; i < Seat_Number.length; i++) {
       const seat = Seat_Number[i];
-      const idcard = IDCARD[i];
 
       await db.promise().query(
-        "INSERT INTO `order` (Order_id, Seat_Number, Order_date, Order_time, Concert_id, ShowDate_id, Member_id ,Price ,Status_id, IDCARD ) VALUES (?, ?, CURRENT_DATE, CURRENT_TIME, ?, ?, ?, ?, ?, ?)",
-        [newOrderId, seat, Concert_id, ShowDate_id, Member_id, Price, "S001", idcard]
+        "INSERT INTO `order` (Order_id, Seat_Number, Order_date, Order_time, Concert_id, ShowDate_id, Member_id ,Price ,Status_id ) VALUES (?, ?, CURRENT_DATE, CURRENT_TIME, ?, ?, ?, ?, ?)",
+        [newOrderId, seat, Concert_id, ShowDate_id, Member_id, Price, "S001"]
       );
 
       await db.promise().query(
@@ -51,6 +50,30 @@ router.post("/AcceptIdcard", async (req, res) => {
       success: true,
       message: "บันทึกข้อมูลสำเร็จ",
       orderId: newOrderId,
+    });
+  } catch (err) {
+    console.error("Error Accept IDCARD:", err);
+    res.status(500).json({ success: false, message: "เกิดข้อผิดพลาด", error: err });
+  }
+});
+
+router.post("/AcceptIdcard", async (req, res) => {
+  const { IDCARD, Seat_Number, ShowDate_id } = req.body;
+
+  try {
+    for (let i = 0; i < Seat_Number.length; i++) {
+      const seat = Seat_Number[i];
+      const idcard = IDCARD[i];
+
+      await db.promise().query(
+        "UPDATE `order` SET IDCARD = ? WHERE Seat_Number = ? AND ShowDate_id = ? ",
+        [idcard, seat, ShowDate_id]
+      );
+    }
+
+    res.json({
+      success: true,
+      message: "บันทึกข้อมูลสำเร็จ",
     });
   } catch (err) {
     console.error("Error Accept IDCARD:", err);
@@ -263,6 +286,8 @@ router.get("/AllOrder", authenticateToken, async (req, res) => {
         COUNT(o.Seat_Number) AS totalseat,           
         SUM(o.Price) AS totalprice,                   
         m.Email,
+        m.Firstname,
+        m.Telephone,
         c.ConcertName,
         c.Poster,
         sd.ShowDate,

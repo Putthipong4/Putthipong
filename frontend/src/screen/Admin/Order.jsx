@@ -101,6 +101,8 @@ function Order() {
                 <th className="text-center">วันที่แสดง</th>
                 <th className="text-center">เวลาที่เริ่ม</th>
                 <th className="text-center">อีเมลผู้ใช้</th>
+                <th className="text-center">ชื่อ</th>
+                <th className="text-center">เบอร์โทรศัพท์</th>
                 <th className="text-center">จำนวนที่นั่ง</th>
                 <th className="text-center">ราคารวม</th>
                 <th className="text-center">สถานะคำสั่งซื้อ</th>
@@ -119,6 +121,8 @@ function Order() {
                     {ord.ShowStart.slice(0, 5)}
                   </td>
                   <td className="text-center">{ord.Email}</td>
+                  <td className="text-center">{ord.Firstname}</td>
+                  <td className="text-center">{ord.Telephone}</td>
                   <td className="text-center">{ord.totalseat}</td>
                   <td className="text-center">{ord.totalprice}</td>
                   <td className="text-center p-3">

@@ -62,12 +62,12 @@ function HomeAdmin() {
       const startMonth = startDate.slice(0, 7);
       const endMonth = endDate.slice(0, 7);
 
-      // ✅ กรอง monthNames ให้อยู่ในช่วงที่เลือก
+      // กรอง monthNames ให้อยู่ในช่วงที่เลือก
       const filteredMonths = monthNames.filter(
         (m) => m.key >= startMonth && m.key <= endMonth
       );
 
-      // ✅ รวมข้อมูลที่อยู่ในช่วงเดือนที่เลือก
+      //  รวมข้อมูลที่อยู่ในช่วงเดือนที่เลือก
       const merged = filteredMonths.map((m) => {
         const found = apiData.find((d) => d.month === m.key);
         return { month: m.name, totalprice: found ? found.totalprice : 0 };

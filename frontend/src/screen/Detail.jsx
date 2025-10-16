@@ -136,7 +136,7 @@ function Detail() {
                 <MapPin size={50} />
                 <div className="flex flex-col p-4">
                   <p className="text-lg text-gray-500">สถานที่แสดง</p>
-                  <span>อิมแพค อารีน่า</span>
+                  <span>{concert.Place}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -195,7 +195,7 @@ function Detail() {
               <div className="flex flex-col gap-12">
                 <div className="flex items-center gap-2">
                   <MapPin size={25} />
-                  <h2 className="text-2xl">อิมแพ็ค อารีน่า</h2>
+                  <h2 className="text-2xl">{concert.Place}</h2>
                 </div>
                 <div className="flex flex-col gap-2">
                   <p className="text-lg text-gray-500">ราคาบัตร</p>

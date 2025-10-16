@@ -61,6 +61,7 @@ router.get("/detailsconcert/:id", async (req, res) => {
            c.Poster, 
            c.OpenSaleDate, 
            c.OpenSaleTimes,
+           c.Place,
            sd.ShowDate_id, 
            sd.ShowDate, 
            sd.ShowStart, 
@@ -89,6 +90,7 @@ router.get("/detailsconcert/:id", async (req, res) => {
       OpenSaleTimes: results[0].OpenSaleTimes,
       ShowDate: results[0].ShowDate,
       SaleDateTime: results[0].SaleDateTime,
+      Place: results[0].Place,
       ShowRounds: results.map((row) => ({
         ShowDate_id: row.ShowDate_id,
         ShowDate: row.ShowDate,
@@ -703,6 +705,7 @@ router.get("/ShowdateandConcertCard", async (req, res) => {
         c.OpenSaleDate,
         c.OpenSaleTimes,
         c.Admin_id,
+        c.Place,
         sd.ShowDate,
         sd.ShowStart,
         MAX(sd.ShowDate) AS LastShowDate,

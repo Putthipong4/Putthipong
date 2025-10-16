@@ -117,9 +117,36 @@ function Seats() {
     });
 
     if (result.isConfirmed) {
+      try {
+      const response = await Axios.post(
+        `http://localhost:3001/api/Order/SelectSeats`,
+        {
+          Seat_Number: selectedSeats,
+          Member_id: memberId,
+          Concert_id: seats.length > 0 ? seats[0].Concert_id : null,
+          Price: pricePerSeat,
+          ShowDate_id 
+        },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
       navigate(`/Idcard/${ShowDate_id}`, {
         state: { selectedSeats, totalPrice, pricePerSeat },
       });
+      } else {
+              Swal.fire({
+                title: response.data.message || "เกิดข้อผิดพลาด",
+                icon: "error",
+              });
+            }
+      } catch (error) {
+            Swal.fire({
+              title: "ไม่สามารถบันทึกข้อมูลได้",
+              text: error.message,
+              icon: "error",
+            });
+          }
     }
   };
   return (

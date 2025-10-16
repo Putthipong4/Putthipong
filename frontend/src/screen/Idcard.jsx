@@ -8,14 +8,12 @@ import Swal from "sweetalert2";
 import Breadcrumbs from "../components/Admin/Breadcrumbs";
 
 function Idcard() {
-  const memberId = localStorage.getItem("memberId");
   const navigate = useNavigate();
   const { ShowDate_id } = useParams();
   const location = useLocation();
-  const { selectedSeats, totalPrice, pricePerSeat} = location.state || {
+  const { selectedSeats, totalPrice} = location.state || {
     selectedSeats: [],
     totalPrice: 0,
-    pricePerSeat: 0
   };
 
 
@@ -73,9 +71,6 @@ function Idcard() {
         {
           Seat_Number: selectedSeats,
           IDCARD: idcards,
-          Member_id: memberId,
-          Concert_id: seats.length > 0 ? seats[0].Concert_id : null,
-          Price: pricePerSeat,
           ShowDate_id 
         },
         { withCredentials: true }
@@ -111,6 +106,7 @@ const CancelPayment = async () => {
       cancelButtonText: "ไม่",
     }).then(async (result) => {
       if (result.isConfirmed) {
+    
         Swal.fire({
           title: "ยกเลิกคำสั่งซื้อเรียบร้อย",
           icon: "success",

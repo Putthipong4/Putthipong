@@ -22,7 +22,7 @@ function Card() {
       .catch((err) => console.error("Error fetching ratings:", err));
   }, []);
 
-  // 🔹 ลบตัวซ้ำ
+  //  ลบตัวซ้ำ
   const uniqueConcerts = concerts.reduce((acc, curr) => {
     if (!acc.some((c) => c.Concert_id === curr.Concert_id)) {
       acc.push(curr);
@@ -78,7 +78,7 @@ function Card() {
             </p>
             <div className="kanit-medium flex items-center text-gray-400">
               <MapPin size={15} className="mr-1" />
-              <span>อิมแพค อารีน่า</span>
+              <span>{concert.Place}</span>
             </div>
           </div>
         </div>
