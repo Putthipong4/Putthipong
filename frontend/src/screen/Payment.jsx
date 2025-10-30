@@ -30,6 +30,8 @@ function Payment() {
   const [isPaid, setIsPaid] = useState(false);
   const isPaidRef = useRef(isPaid);
 
+  
+  console.log("Order ID:", Order_id);
   useEffect(() => {
   isPaidRef.current = isPaid;
 }, [isPaid]);
@@ -44,18 +46,19 @@ function Payment() {
       .catch((err) => console.error(err));
   }, [ShowDate_id]);
 
+  
   // โหลด order + นับถอยหลัง
   useEffect(() => {
     if (!Order_id || isPaid) return; // ✅ ถ้า isPaid=true จะไม่ตั้ง timer แล้วนะ
-
+    
     let timer;
     Axios.get(`http://localhost:3001/api/Order/Order/${Order_id}`, {
       withCredentials: true,
     })
       .then((res) => {
         if (res.data.success) {
-          console.log(order);
           const data = res.data.data;
+          console.log(order)
           setOrder(data);
 
           if (data.expireTime) {

@@ -6,8 +6,6 @@ import Navbar from "../components/Navbar";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import Breadcrumbs from "../components/Admin/Breadcrumbs";
-import { Star } from "lucide-react";
-
 
 function MyTicket() {
   const memberId = localStorage.getItem("memberId");

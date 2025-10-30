@@ -61,25 +61,48 @@ router.post("/AcceptIdcard", async (req, res) => {
   const { IDCARD, Seat_Number, ShowDate_id } = req.body;
 
   try {
+
+    let orderId = null; // ✅ ประกาศตัวแปรไว้ก่อน
+
     for (let i = 0; i < Seat_Number.length; i++) {
       const seat = Seat_Number[i];
       const idcard = IDCARD[i];
 
+      // อัปเดตเลขบัตรในแต่ละที่นั่ง
       await db.promise().query(
-        "UPDATE `order` SET IDCARD = ? WHERE Seat_Number = ? AND ShowDate_id = ? ",
+        "UPDATE `order` SET IDCARD = ? WHERE Seat_Number = ? AND ShowDate_id = ?",
         [idcard, seat, ShowDate_id]
       );
+
+      // ✅ ดึง orderId จากแถวที่อัปเดตล่าสุด (อาจใช้ SELECT ก็ได้)
+      const [rows] = await db
+        .promise()
+        .query(
+          "SELECT Order_id FROM `order` ORDER BY Order_id DESC LIMIT 1",
+          [seat, ShowDate_id]
+        );
+
+      if (rows.length > 0) {
+        orderId = rows[0].Order_id; // เก็บค่า orderId ล่าสุด
+      }
     }
 
     res.json({
       success: true,
       message: "บันทึกข้อมูลสำเร็จ",
+      orderId, // ✅ ตอนนี้มีค่าแล้ว
+      statusId: 1, // ✅ ใส่ค่า status (หรือดึงจาก DB ก็ได้)
     });
   } catch (err) {
     console.error("Error Accept IDCARD:", err);
-    res.status(500).json({ success: false, message: "เกิดข้อผิดพลาด", error: err });
+    res.status(500).json({
+      success: false,
+      message: "เกิดข้อผิดพลาด",
+      error: err,
+    });
   }
 });
+
 
 router.put("/CancelOrder", async (req, res) => {
   const { Seat_Number, Order_id, ShowDate_id } = req.body;
@@ -196,14 +219,15 @@ router.get("/Order/:id", async (req, res) => {
     const order = rows[0];
 
     // ✅ คำนวณ expireTime ฝั่ง backend
-    const orderTime = new Date(order.order_datetime);
+    const isoDateTime = order.order_datetime.replace(" ", "T");
+    const orderTime = new Date(isoDateTime);
     const expireTime = new Date(orderTime.getTime() + 2 * 60 * 1000);
 
     res.json({
       success: true,
       data: {
         ...order,
-        expireTime,
+        expireTime: expireTime.toISOString(),
       },
     });
   } catch (error) {
